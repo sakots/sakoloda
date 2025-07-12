@@ -250,6 +250,7 @@ function upload() {
   $ng_message = '';
   $total_file_size = 0;
   $successful_files = array();
+  $ok_num = 0; // ループ外で初期化
   
   if(count($_FILES['upfile']['name']) < 1) {
     log_access('upload', 400, 0, '', 'ファイルがないです。');
@@ -259,7 +260,6 @@ function upload() {
   for ($i = 0; $i < count($_FILES['upfile']['name']); $i++) {
     $origin_file = isset($_FILES['upfile']['name'][$i]) ? sanitize_filename($_FILES['upfile']['name'][$i]) : "";
     $tmp_file = isset($_FILES['upfile']['tmp_name'][$i]) ? $_FILES['upfile']['tmp_name'][$i] : "";
-    $ok_num = 0;
     
     // セキュリティ: ファイルアップロードの基本チェック
     if (!is_uploaded_file($tmp_file)) {
