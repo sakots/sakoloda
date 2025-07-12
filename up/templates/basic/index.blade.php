@@ -40,7 +40,7 @@
         </div>
       </div>
       <div>
-        <input type="submit" id="submit-btn" value=" うp ">
+        <input type="submit" id="submit-btn" value=" うp " disabled>
         @if ($token != null)
         <input type="hidden" name="token" value="{{$token}}">
         @else

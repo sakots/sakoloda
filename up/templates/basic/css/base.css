@@ -32,10 +32,11 @@ a:visited {
 
 #up form {
   margin: 1.5em auto;
-  height: 30vw;
+  min-height: 30vw;
   box-shadow: 0 0 2px #3e3e3e;
   padding: 30px;
   text-align: center;
+  overflow: hidden;
 }
 #up div.upload-area {
   margin: auto;
@@ -90,16 +91,22 @@ a:visited {
   border-width: 1px 3px 3px 1px;
   opacity: 0.6;
   cursor: pointer;
+  transition: all 0.3s ease;
 }
-#up input[type=submit]:hover {
+#up input[type=submit]:hover:not(:disabled) {
   background-color: rgb(108, 168, 255);
   border-color: rgba(40, 62, 95, 0.7);
   border-width: 1px 3px 3px 1px;
 }
-#up input[type=submit]:active {
+#up input[type=submit]:active:not(:disabled) {
   background-color: rgb(108, 168, 255);
   border-color: rgba(40, 62, 95, 0.7);
   border-width: 3px 1px 1px 3px;
+}
+#up input[type=submit]:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  background-color: rgba(108, 168, 255, 0.4);
 }
 #up input[type=text] {
   border-width: 1px;
@@ -110,6 +117,7 @@ a:visited {
 
 #file_section {
   margin-bottom: 1em;
+  clear: both;
 }
 #file_section .file-info {
   margin-bottom: 15px;
@@ -240,7 +248,9 @@ footer .copy p a.github svg {
 
 .clipboard-upload {
   margin-top: 20px;
+  margin-bottom: 30px;
   text-align: center;
+  clear: both;
 }
 .clipboard-upload .clipboard-btn {
   background-color: #4CAF50;

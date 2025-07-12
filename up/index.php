@@ -230,53 +230,64 @@ function upload() {
     $origin_file = isset($_FILES['upfile']['name'][$i]) ? basename($_FILES['upfile']['name'][$i]) : "";
     $tmp_file = isset($_FILES['upfile']['tmp_name'][$i]) ? $_FILES['upfile']['tmp_name'][$i] : "";
     $ok_num = 0;
-    if($_FILES['upfile']['size'][$i] < UP_MAX_SIZE) {
-      // クリップボードからの画像の場合、拡張子を自動判定
-      $extension = pathinfo($origin_file, PATHINFO_EXTENSION);
-      if (empty($extension) || $extension === 'blob') {
+    
+    // まずファイルを一時的に保存
+    $extension = pathinfo($origin_file, PATHINFO_EXTENSION);
+    if (empty($extension) || $extension === 'blob') {
+      // クリップボードからのBlobオブジェクトの場合の処理
+      if (!empty($tmp_file) && is_file($tmp_file)) {
         // MIMEタイプから拡張子を判定
         $finfo = finfo_open(FILEINFO_MIME_TYPE);
         $mime_type = finfo_file($finfo, $tmp_file);
         finfo_close($finfo);
-        
-        switch ($mime_type) {
-          case 'image/jpeg':
-            $extension = 'jpg';
-            break;
-          case 'image/png':
-            $extension = 'png';
-            break;
-          case 'image/gif':
-            $extension = 'gif';
-            break;
-          case 'image/webp':
-            $extension = 'webp';
-            break;
-          default:
-            $extension = 'png'; // デフォルト
-            break;
-        }
+      } else {
+        // クリップボードからのBlobの場合、デフォルトでPNGとして扱う
+        $mime_type = 'image/png';
       }
       
-      $upfile = date("Ymd_His").mt_rand(1000,9999).'.'.$extension;
-      $dest = UP_DIR.'/'.$upfile;
-      move_uploaded_file($tmp_file, $dest);
-      chmod($dest, PERMISSION_FOR_DEST);
-      if(!is_file($dest)) {
-        $ng_message .= $origin_file.'(正常にコピーできませんでした。), ';
+      switch ($mime_type) {
+        case 'image/jpeg':
+          $extension = 'jpg';
+          break;
+        case 'image/png':
+          $extension = 'png';
+          break;
+        case 'image/gif':
+          $extension = 'gif';
+          break;
+        case 'image/webp':
+          $extension = 'webp';
+          break;
+        default:
+          $extension = 'png'; // デフォルト
+          break;
       }
-      
-      // WebP圧縮処理
-      $file_size_mb = $_FILES['upfile']['size'][$i] / (1024 * 1024);
-      if ($file_size_mb > UP_THRESHOLD_MB_WEBP && in_array($extension, ['jpg', 'jpeg', 'png', 'gif'])) {
-        $webp_result = convert_to_webp($dest, $extension);
-        if ($webp_result) {
-          // 元ファイルを削除してWebPファイルに置き換え
-          unlink($dest);
-          $upfile = $webp_result;
-          $dest = UP_DIR.'/'.$upfile;
-        }
+    }
+    
+    $upfile = date("Ymd_His").mt_rand(1000,9999).'.'.$extension;
+    $dest = UP_DIR.'/'.$upfile;
+    move_uploaded_file($tmp_file, $dest);
+    chmod($dest, PERMISSION_FOR_DEST);
+    if(!is_file($dest)) {
+      $ng_message .= $origin_file.'(正常にコピーできませんでした。), ';
+      continue;
+    }
+    
+    // WebP圧縮処理（ファイルサイズチェックの前）
+    $file_size_mb = $_FILES['upfile']['size'][$i] / (1024 * 1024);
+    if ($file_size_mb > UP_THRESHOLD_MB_WEBP && in_array($extension, ['jpg', 'jpeg', 'png', 'gif'])) {
+      $webp_result = convert_to_webp($dest, $extension);
+      if ($webp_result) {
+        // 元ファイルを削除してWebPファイルに置き換え
+        unlink($dest);
+        $upfile = $webp_result;
+        $dest = UP_DIR.'/'.$upfile;
       }
+    }
+    
+    // 圧縮後のファイルサイズでチェック
+    $final_size = filesize($dest);
+    if($final_size < UP_MAX_SIZE) {
       //拡張子チェック
       if(preg_match('/\A('.ACCEPT_FILE_EXT.')\z/i', $extension)) {
         try {

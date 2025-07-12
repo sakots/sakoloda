@@ -35,10 +35,11 @@ a:visited {
 #up {
   form {
     margin: 1.5em auto;
-    height: 30vw;
+    min-height: 30vw;
     box-shadow: 0 0 2px #3e3e3e;
     padding: 30px;
     text-align: center;
+    overflow: hidden;
   }
   div.upload-area {
     margin: auto;
@@ -93,15 +94,23 @@ a:visited {
     border-width: 1px 3px 3px 1px;
     opacity: 0.6;
     cursor: pointer;
-    &:hover {
+    transition: all 0.3s ease;
+    
+    &:hover:not(:disabled) {
       background-color: rgba(108, 168, 255, 1.0);
       border-color: rgba(40, 62, 95, 0.7);
       border-width: 1px 3px 3px 1px;
     }
-    &:active {
+    &:active:not(:disabled) {
       background-color: rgba(108, 168, 255, 1.0);
       border-color: rgba(40, 62, 95, 0.7);
       border-width: 3px 1px 1px 3px;
+    }
+    
+    &:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      background-color: rgba(108, 168, 255, 0.4);
     }
   }
   input[type="text"] {
@@ -114,6 +123,7 @@ a:visited {
 
 #file_section {
   margin-bottom: 1em;
+  clear: both;
   
   .file-info {
     margin-bottom: 15px;
@@ -250,7 +260,9 @@ footer {
 // クリップボード機能のスタイル
 .clipboard-upload {
   margin-top: 20px;
+  margin-bottom: 30px;
   text-align: center;
+  clear: both;
   
   .clipboard-btn {
     background-color: #4CAF50;
