@@ -5,4 +5,4 @@ config.php
 *.db
 tmp/
 cache/
-upfile/
+img/
