@@ -19,6 +19,14 @@
     <h2>ろだ</h2>
     <p>最大アップロードサイズ: {{$up_max_mb}}MB</p>
     <p>このサイズを超えるとwebpに圧縮します: {{$up_threshold_mb_webp}}MB</p>
+    @if ($rate_limit_enabled)
+    <div class="rate-limit-info">
+      <p>アップロード制限: {{$rate_limit_info['remaining']}}/{{$rate_limit_info['limit']}} 残り</p>
+      @if ($rate_limit_info['remaining'] == 0)
+      <p class="rate-limit-warning">⚠️ 制限に達しました。{{date('H:i', $rate_limit_info['reset_time'])}}までお待ちください。</p>
+      @endif
+    </div>
+    @endif
     <form action="index.php?mode=upload" method="POST" enctype="multipart/form-data">
       <div class="upload-area">
         <div class="dropbox">

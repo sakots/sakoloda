@@ -74,6 +74,14 @@ define('PERMISSION_FOR_DIR', 0707);//初期値 0707
 //する:1 にすると外部サイトからの不正な投稿を拒絶することができます
 define('CHECK_CSRF_TOKEN', '1');
 
+//レート制限の設定
+//アップロードのレート制限を有効にする する:1 しない:0
+define('ENABLE_RATE_LIMIT', '1');
+//1分間の最大アップロード回数
+define('RATE_LIMIT_MAX_UPLOADS', '5');
+//レート制限の時間枠（秒）
+define('RATE_LIMIT_TIME_WINDOW', '60');
+
 /* ------------- できれば変更してほしくないところ ------------- */
 //スクリプト名
 define('PHP_SELF', 'index.php');

@@ -33,6 +33,25 @@ a:visited {
 }
 
 #up {
+  .rate-limit-info {
+    margin: 10px 0;
+    padding: 8px 12px;
+    background-color: rgba(255, 255, 255, 0.3);
+    border-radius: 4px;
+    border: 1px solid rgba(53, 34, 34, 0.2);
+    
+    p {
+      margin: 3px 0;
+      font-size: 12px;
+      color: #555;
+      
+      &.rate-limit-warning {
+        color: #d32f2f;
+        font-weight: bold;
+      }
+    }
+  }
+  
   form {
     margin: 1.5em auto;
     min-height: 30vw;
