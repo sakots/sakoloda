@@ -1,0 +1,8 @@
+.env
+.vscode
+
+config.php
+*.db
+tmp/
+cache/
+upfile/
