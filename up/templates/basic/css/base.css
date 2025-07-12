@@ -281,6 +281,84 @@ footer .copy p a.github svg {
   display: none;
 }
 
+.file-previews {
+  margin-top: 20px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+  justify-content: center;
+}
+.file-previews .file-preview {
+  position: relative;
+  width: 120px;
+  height: 120px;
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  overflow: hidden;
+  background-color: #f9f9f9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+.file-previews .file-preview:hover {
+  border-color: #2196F3;
+  box-shadow: 0 2px 8px rgba(33, 150, 243, 0.3);
+}
+.file-previews .file-preview .preview-image {
+  max-width: 100%;
+  max-height: 100%;
+  -o-object-fit: cover;
+     object-fit: cover;
+  border-radius: 4px;
+}
+.file-previews .file-preview .preview-icon {
+  width: 48px;
+  height: 48px;
+  fill: #666;
+}
+.file-previews .file-preview .cancel-btn {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 24px;
+  height: 24px;
+  background-color: #f44336;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  z-index: 10;
+}
+.file-previews .file-preview .cancel-btn:hover {
+  background-color: #d32f2f;
+  transform: scale(1.1);
+}
+.file-previews .file-preview .cancel-btn:active {
+  background-color: #b71c1c;
+  transform: scale(0.95);
+}
+.file-previews .file-preview .file-name {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  color: white;
+  font-size: 10px;
+  padding: 4px 6px;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .clipboard-upload {
   margin-top: 20px;
   margin-bottom: 30px;

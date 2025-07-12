@@ -37,6 +37,7 @@
         </div>
         <p>Drag and drop a file or click</p>
         <input type="file" name="upfile[]" id="input-files" accept="{{$type}}" multiple>
+        <div id="file-previews" class="file-previews"></div>
       </div>
       <div class="clipboard-upload">
         <button type="button" id="clipboard-btn" class="clipboard-btn">

@@ -3,6 +3,22 @@ document.addEventListener('DOMContentLoaded', function() {
   const inputFiles = document.getElementById('input-files');
   const uploadArea = document.querySelector('.upload-area');
   const submitBtn = document.getElementById('submit-btn');
+  const filePreviews = document.getElementById('file-previews');
+  
+  // デバッグ情報
+  console.log('要素の確認:', {
+    dropbox: !!dropbox,
+    inputFiles: !!inputFiles,
+    uploadArea: !!uploadArea,
+    submitBtn: !!submitBtn,
+    filePreviews: !!filePreviews
+  });
+  
+  // filePreviewsが存在しない場合のエラーハンドリング
+  if (!filePreviews) {
+    console.error('file-previews要素が見つかりません');
+    return;
+  }
 
   // ドラッグオーバー時のイベント
   ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
@@ -38,7 +54,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const dt = e.dataTransfer;
     const files = dt.files;
     inputFiles.files = files;
-    updateSubmitButton();
+    handleFileSelect();
   }
 
   // クリックでファイル選択
@@ -47,7 +63,7 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 
   // ファイル選択時の処理
-  inputFiles.addEventListener('change', updateSubmitButton);
+  inputFiles.addEventListener('change', handleFileSelect);
 
   // クリップボード機能
   const clipboardBtn = document.getElementById('clipboard-btn');
@@ -83,8 +99,8 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // クリップボードのBlobをファイル入力フィールドに設定（ファイル名をサニタイズ）
             const sanitizeFileName = (filename) => {
-              // 危険な文字を除去
-              const dangerousChars = /[<>:"/\\|?*&;=[]{}()`~!@#$%^+|]/g;
+              // 危険な文字を除去（正規表現の特殊文字をエスケープ）
+              const dangerousChars = /[<>:"/\\|?*&;=\[\]{}()`~!@#$%^+|]/g;
               let sanitized = filename.replace(dangerousChars, '');
               
               // 制御文字を除去
@@ -165,9 +181,106 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   };
 
+  // ファイル選択時の処理
+  function handleFileSelect() {
+    console.log('ファイル選択イベントが発生しました');
+    updateSubmitButton();
+    createFilePreviews();
+  }
+
+  // ファイルプレビューを作成する関数
+  function createFilePreviews() {
+    try {
+      // 既存のプレビューをクリア
+      filePreviews.innerHTML = '';
+      
+      const files = inputFiles.files;
+      console.log('選択されたファイル数:', files.length);
+      
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        createPreviewElement(file, i);
+      }
+    } catch (error) {
+      console.error('ファイルプレビューの作成中にエラーが発生しました:', error);
+    }
+  }
+
+  // 個別のプレビュー要素を作成する関数
+  function createPreviewElement(file, index) {
+    try {
+      const previewDiv = document.createElement('div');
+      previewDiv.className = 'file-preview';
+      previewDiv.dataset.index = index;
+      
+      // キャンセルボタン
+      const cancelBtn = document.createElement('button');
+      cancelBtn.className = 'cancel-btn';
+      cancelBtn.innerHTML = '×';
+      cancelBtn.title = 'このファイルを削除';
+      cancelBtn.onclick = () => removeFile(index);
+      
+      // ファイル名
+      const fileName = document.createElement('div');
+      fileName.className = 'file-name';
+      fileName.textContent = file.name.length > 15 ? file.name.substring(0, 12) + '...' : file.name;
+      
+      // 画像プレビューまたはアイコン
+      if (file.type.startsWith('image/')) {
+        const img = document.createElement('img');
+        img.className = 'preview-image';
+        img.alt = file.name;
+        
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          img.src = e.target.result;
+        };
+        reader.onerror = function(e) {
+          console.error('ファイル読み込みエラー:', e);
+        };
+        reader.readAsDataURL(file);
+        
+        previewDiv.appendChild(img);
+      } else {
+        // 画像以外のファイルはアイコンを表示
+        const icon = document.createElement('svg');
+        icon.className = 'preview-icon';
+        icon.innerHTML = '<use href="templates/basic/icons/cloud-upload-alt.svg#cloud-upload"></use>';
+        previewDiv.appendChild(icon);
+      }
+      
+      previewDiv.appendChild(cancelBtn);
+      previewDiv.appendChild(fileName);
+      filePreviews.appendChild(previewDiv);
+    } catch (error) {
+      console.error('プレビュー要素の作成中にエラーが発生しました:', error);
+    }
+  }
+
+  // ファイルを削除する関数
+  function removeFile(index) {
+    try {
+      const dt = new DataTransfer();
+      const files = inputFiles.files;
+      
+      for (let i = 0; i < files.length; i++) {
+        if (i !== index) {
+          dt.items.add(files[i]);
+        }
+      }
+      
+      inputFiles.files = dt.files;
+      updateSubmitButton();
+      createFilePreviews();
+    } catch (error) {
+      console.error('ファイル削除中にエラーが発生しました:', error);
+    }
+  }
+
   // アップロードボタンの有効/無効を更新する関数
   function updateSubmitButton() {
     const hasFiles = inputFiles.files.length > 0;
+    console.log('ファイル数:', inputFiles.files.length, 'ボタン有効:', hasFiles);
     submitBtn.disabled = !hasFiles;
     
     if (hasFiles) {
