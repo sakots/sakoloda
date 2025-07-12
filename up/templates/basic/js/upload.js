@@ -81,8 +81,45 @@ document.addEventListener('DOMContentLoaded', function() {
             clipboardPreview.style.display = 'block';
             clipboardBtn.style.display = 'none';
             
-            // クリップボードのBlobをファイル入力フィールドに設定
-            const file = new File([blob], `clipboard-${Date.now()}.png`, { type: type });
+            // クリップボードのBlobをファイル入力フィールドに設定（ファイル名をサニタイズ）
+            const sanitizeFileName = (filename) => {
+              // 危険な文字を除去
+              const dangerousChars = /[<>:"/\\|?*&;=[]{}()`~!@#$%^+|]/g;
+              let sanitized = filename.replace(dangerousChars, '');
+              
+              // 制御文字を除去
+              sanitized = sanitized.replace(/[\x00-\x1F\x7F]/g, '');
+              
+              // 連続するドットを除去
+              sanitized = sanitized.replace(/\.+/g, '.');
+              
+              // 先頭・末尾のドットとスペースを除去
+              sanitized = sanitized.trim('. ');
+              
+              // ファイル名が空になった場合のデフォルト名
+              if (!sanitized) {
+                sanitized = 'clipboard_image';
+              }
+              
+              // ファイル名の長さ制限（拡張子を除いて最大50文字）
+              const maxLength = 50;
+              if (sanitized.length > maxLength) {
+                const lastDotIndex = sanitized.lastIndexOf('.');
+                if (lastDotIndex > 0) {
+                  const name = sanitized.substring(0, lastDotIndex);
+                  const ext = sanitized.substring(lastDotIndex);
+                  sanitized = name.substring(0, maxLength - ext.length) + ext;
+                } else {
+                  sanitized = sanitized.substring(0, maxLength);
+                }
+              }
+              
+              return sanitized;
+            };
+            
+            const timestamp = Date.now();
+            const safeFileName = sanitizeFileName(`clipboard-${timestamp}.png`);
+            const file = new File([blob], safeFileName, { type: type });
             const dataTransfer = new DataTransfer();
             dataTransfer.items.add(file);
             inputFiles.files = dataTransfer.files;

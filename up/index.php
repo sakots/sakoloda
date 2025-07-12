@@ -240,7 +240,7 @@ function upload() {
     exit;
   }
   for ($i = 0; $i < count($_FILES['upfile']['name']); $i++) {
-    $origin_file = isset($_FILES['upfile']['name'][$i]) ? basename($_FILES['upfile']['name'][$i]) : "";
+    $origin_file = isset($_FILES['upfile']['name'][$i]) ? sanitize_filename($_FILES['upfile']['name'][$i]) : "";
     $tmp_file = isset($_FILES['upfile']['tmp_name'][$i]) ? $_FILES['upfile']['tmp_name'][$i] : "";
     $ok_num = 0;
     
@@ -485,6 +485,61 @@ function log_del() {
 function char_convert($str) {
     mb_language(LANG);
     return mb_convert_encoding($str, "UTF-8", "auto");
+}
+
+// ファイル名のサニタイズ強化
+function sanitize_filename($filename) {
+  // 文字コード変換
+  $filename = char_convert($filename);
+  
+  // 危険な文字を除去・置換
+  $dangerous_chars = [
+    '<' => '', '>' => '', ':' => '', '"' => '',
+    '/' => '', '\\' => '', '|' => '', '?' => '',
+    '*' => '', '&' => '', ';' => '', '=' => '',
+    '[' => '', ']' => '', '{' => '', '}' => '',
+    '(' => '', ')' => '', '`' => '', '~' => '',
+    '!' => '', '@' => '', '#' => '', '$' => '',
+    '%' => '', '^' => '', '+' => '', '|' => ''
+  ];
+  $filename = strtr($filename, $dangerous_chars);
+  
+  // 制御文字を除去
+  $filename = preg_replace('/[\x00-\x1F\x7F]/', '', $filename);
+  
+  // パストラバーサル攻撃を防ぐ（相対パスを除去）
+  $filename = basename($filename);
+  
+  // 連続するドットを除去（隠しファイル対策）
+  $filename = preg_replace('/\.+/', '.', $filename);
+  
+  // 先頭・末尾のドットとスペースを除去
+  $filename = trim($filename, '. ');
+  
+  // ファイル名が空になった場合のデフォルト名
+  if (empty($filename)) {
+    $filename = 'uploaded_file';
+  }
+  
+  // ファイル名の長さ制限（拡張子を除いて最大100文字）
+  $pathinfo = pathinfo($filename);
+  $name = $pathinfo['filename'];
+  $ext = isset($pathinfo['extension']) ? '.' . $pathinfo['extension'] : '';
+  
+  // ファイル名部分を100文字に制限
+  if (mb_strlen($name, 'UTF-8') > 100) {
+    $name = mb_substr($name, 0, 100, 'UTF-8');
+  }
+  
+  // 拡張子も含めて最大255文字に制限
+  $fullname = $name . $ext;
+  if (mb_strlen($fullname, 'UTF-8') > 255) {
+    $max_name_length = 255 - mb_strlen($ext, 'UTF-8');
+    $name = mb_substr($name, 0, $max_name_length, 'UTF-8');
+    $fullname = $name . $ext;
+  }
+  
+  return $fullname;
 }
 
 // セキュリティ: ファイルタイプ検証関数
