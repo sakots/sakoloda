@@ -33,13 +33,19 @@ define('THEME_DIR', 'basic');
 define('LOG_MAX', '75');
 
 //アップロードファイル保存ディレクトリ名
-define('UP_DIR', 'upfile');
+define('UP_DIR', 'img');
 
 //一時ファイル保存ディレクトリ名
 define('TEMP_DIR', 'tmp');
 
 //アップロードできるファイルの最大サイズ(MB)
 define('UP_MAX_MB', '4');
+
+//WebP圧縮の閾値(MB) - このサイズを超えるとWebPに圧縮
+define('UP_THRESHOLD_MB_WEBP', '2');
+
+//WebP圧縮の品質(0-100)
+define('WEBP_QUALITY', '80');
 
 //アップロード可能なファイルのmimetype。', 'で区切ってください。
 define('ACCEPT_FILETYPE', 'image/jpeg, image/png, image/gif, image/webp');

@@ -57,6 +57,9 @@ $dat['up_max_mb'] = UP_MAX_MB;
 $dat['t_name'] = THEME_NAME;
 $dat['t_ver'] = THEME_VER;
 
+$dat['up_threshold_mb_webp'] = UP_THRESHOLD_MB_WEBP;
+$dat['webp_quality'] = WEBP_QUALITY;
+
 //データベース接続PDO
 define('DB_PDO', 'sqlite:'.DB_NAME.'.db');
 define('DB_TIMEOUT', 5000); // タイムアウト時間（ミリ秒）
@@ -69,8 +72,8 @@ del_temp();
 
 // キャッシュディレクトリの作成
 if (!is_dir($cache)) {
-    mkdir($cache, PERMISSION_FOR_DIR);
-    chmod($cache, PERMISSION_FOR_DIR);
+  mkdir($cache, PERMISSION_FOR_DIR);
+  chmod($cache, PERMISSION_FOR_DIR);
 }
 
 $req_method = isset($_SERVER["REQUEST_METHOD"]) ? $_SERVER["REQUEST_METHOD"]: "";
@@ -223,47 +226,59 @@ function upload() {
     error('ファイルがないです。');
     exit;
   }
-      for ($i = 0; $i < count($_FILES['upfile']['name']); $i++) {
-        $origin_file = isset($_FILES['upfile']['name'][$i]) ? basename($_FILES['upfile']['name'][$i]) : "";
-        $tmp_file = isset($_FILES['upfile']['tmp_name'][$i]) ? $_FILES['upfile']['tmp_name'][$i] : "";
-        $ok_num = 0;
-        if($_FILES['upfile']['size'][$i] < UP_MAX_SIZE) {
-            // クリップボードからの画像の場合、拡張子を自動判定
-            $extension = pathinfo($origin_file, PATHINFO_EXTENSION);
-            if (empty($extension) || $extension === 'blob') {
-                // MIMEタイプから拡張子を判定
-                $finfo = finfo_open(FILEINFO_MIME_TYPE);
-                $mime_type = finfo_file($finfo, $tmp_file);
-                finfo_close($finfo);
-                
-                switch ($mime_type) {
-                    case 'image/jpeg':
-                        $extension = 'jpg';
-                        break;
-                    case 'image/png':
-                        $extension = 'png';
-                        break;
-                    case 'image/gif':
-                        $extension = 'gif';
-                        break;
-                    case 'image/webp':
-                        $extension = 'webp';
-                        break;
-                    default:
-                        $extension = 'png'; // デフォルト
-                        break;
-                }
-            }
-            
-            $upfile = date("Ymd_His").mt_rand(1000,9999).'.'.$extension;
-            $dest = UP_DIR.'/'.$upfile;
-            move_uploaded_file($tmp_file, $dest);
-            chmod($dest, PERMISSION_FOR_DEST);
-            if(!is_file($dest)) {
-                $ng_message .= $origin_file.'(正常にコピーできませんでした。), ';
-            }
-            //拡張子チェック
-            if(preg_match('/\A('.ACCEPT_FILE_EXT.')\z/i', $extension)) {
+  for ($i = 0; $i < count($_FILES['upfile']['name']); $i++) {
+    $origin_file = isset($_FILES['upfile']['name'][$i]) ? basename($_FILES['upfile']['name'][$i]) : "";
+    $tmp_file = isset($_FILES['upfile']['tmp_name'][$i]) ? $_FILES['upfile']['tmp_name'][$i] : "";
+    $ok_num = 0;
+    if($_FILES['upfile']['size'][$i] < UP_MAX_SIZE) {
+      // クリップボードからの画像の場合、拡張子を自動判定
+      $extension = pathinfo($origin_file, PATHINFO_EXTENSION);
+      if (empty($extension) || $extension === 'blob') {
+        // MIMEタイプから拡張子を判定
+        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+        $mime_type = finfo_file($finfo, $tmp_file);
+        finfo_close($finfo);
+        
+        switch ($mime_type) {
+          case 'image/jpeg':
+            $extension = 'jpg';
+            break;
+          case 'image/png':
+            $extension = 'png';
+            break;
+          case 'image/gif':
+            $extension = 'gif';
+            break;
+          case 'image/webp':
+            $extension = 'webp';
+            break;
+          default:
+            $extension = 'png'; // デフォルト
+            break;
+        }
+      }
+      
+      $upfile = date("Ymd_His").mt_rand(1000,9999).'.'.$extension;
+      $dest = UP_DIR.'/'.$upfile;
+      move_uploaded_file($tmp_file, $dest);
+      chmod($dest, PERMISSION_FOR_DEST);
+      if(!is_file($dest)) {
+        $ng_message .= $origin_file.'(正常にコピーできませんでした。), ';
+      }
+      
+      // WebP圧縮処理
+      $file_size_mb = $_FILES['upfile']['size'][$i] / (1024 * 1024);
+      if ($file_size_mb > UP_THRESHOLD_MB_WEBP && in_array($extension, ['jpg', 'jpeg', 'png', 'gif'])) {
+        $webp_result = convert_to_webp($dest, $extension);
+        if ($webp_result) {
+          // 元ファイルを削除してWebPファイルに置き換え
+          unlink($dest);
+          $upfile = $webp_result;
+          $dest = UP_DIR.'/'.$upfile;
+        }
+      }
+      //拡張子チェック
+      if(preg_match('/\A('.ACCEPT_FILE_EXT.')\z/i', $extension)) {
         try {
           execute_db_operation(function($db) use ($user_ip, $upfile, $invz) {
             $stmt = $db->prepare("INSERT INTO uplog (created, host, upfile, invz) VALUES (datetime('now', 'localtime'), :host, :upfile, :invz)");
@@ -416,8 +431,59 @@ function log_del() {
 
 //文字コード変換
 function char_convert($str) {
-  mb_language(LANG);
-  return mb_convert_encoding($str, "UTF-8", "auto");
+    mb_language(LANG);
+    return mb_convert_encoding($str, "UTF-8", "auto");
+}
+
+//WebP変換関数
+function convert_to_webp($source_path, $original_extension) {
+    // GDライブラリが利用可能かチェック
+    if (!extension_loaded('gd')) {
+        return false;
+    }
+    
+    // 元画像を読み込み
+    $image = null;
+    switch (strtolower($original_extension)) {
+        case 'jpg':
+        case 'jpeg':
+            $image = imagecreatefromjpeg($source_path);
+            break;
+        case 'png':
+            $image = imagecreatefrompng($source_path);
+            // PNGの透明度を保持
+            imagepalettetotruecolor($image);
+            imagealphablending($image, true);
+            imagesavealpha($image, true);
+            break;
+        case 'gif':
+            $image = imagecreatefromgif($source_path);
+            break;
+        default:
+            return false;
+    }
+    
+    if (!$image) {
+        return false;
+    }
+    
+    // WebPファイル名を生成
+    $webp_filename = pathinfo($source_path, PATHINFO_FILENAME) . '.webp';
+    $webp_path = UP_DIR.'/'.$webp_filename;
+    
+    // WebPとして保存
+    $webp_quality = defined('WEBP_QUALITY') ? WEBP_QUALITY : 80;
+    $result = imagewebp($image, $webp_path, $webp_quality);
+    
+    // メモリを解放
+    imagedestroy($image);
+    
+    if ($result) {
+        chmod($webp_path, PERMISSION_FOR_DEST);
+        return $webp_filename;
+    }
+    
+    return false;
 }
 
 //リザルト画面

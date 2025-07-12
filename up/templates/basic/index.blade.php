@@ -18,6 +18,7 @@
   <section id="up">
     <h2>ろだ</h2>
     <p>最大アップロードサイズ: {{$up_max_mb}}MB</p>
+    <p>このサイズを超えるとwebpに圧縮します: {{$up_threshold_mb_webp}}MB</p>
     <form action="index.php?mode=upload" method="POST" enctype="multipart/form-data">
       <div class="upload-area">
         <div class="dropbox">
