@@ -75,7 +75,6 @@ document.addEventListener('DOMContentLoaded', function() {
     clipboardBtn: !!clipboardBtn,
     clipboardPreview: !!clipboardPreview,
     clipboardImage: !!clipboardImage,
-    clipboardUploadBtn: !!clipboardUploadBtn,
     clipboardCancelBtn: !!clipboardCancelBtn
   });
 
