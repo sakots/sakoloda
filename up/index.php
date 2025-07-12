@@ -90,6 +90,8 @@ switch($mode) {
     return upload();
   case 'del':
     return del();
+  case 'logs':
+    return show_logs();
   default:
     return def();
 }
@@ -106,8 +108,15 @@ function init() {
       // はじめての実行なら、テーブルを作成
       $db = new PDO(DB_PDO);
       $db->setAttribute(PDO::ATTR_ERRMODE,PDO::ERRMODE_EXCEPTION);
+      
+      // アップロードログテーブル
       $sql = "CREATE TABLE uplog (id integer primary key autoincrement, created timestamp, name VARCHAR(1000), sub VARCHAR(1000), com VARCHAR(10000), host TEXT, pwd TEXT, upfile TEXT, age INT, invz VARCHAR(1) )";
-      $db = $db->query($sql);
+      $db->query($sql);
+      
+      // アクセスログテーブル
+      $sql = "CREATE TABLE accesslog (id integer primary key autoincrement, created timestamp, action VARCHAR(50), user_ip TEXT, user_agent TEXT, referer TEXT, request_uri TEXT, method VARCHAR(10), status_code INT, file_size BIGINT, file_name VARCHAR(255), error_message TEXT)";
+      $db->query($sql);
+      
       $db = null; //db切断
     }
   } catch (PDOException $e) {
@@ -216,7 +225,10 @@ function upload() {
   $upfile  = '';
   $invz = '0';
 
-  if($req_method !== "POST") {error('投稿形式が不正です。'); }
+  if($req_method !== "POST") {
+    log_access('upload', 400, 0, '', '投稿形式が不正です。');
+    error('投稿形式が不正です。'); 
+  }
 
   $user_ip = get_uip();
   
@@ -227,6 +239,7 @@ function upload() {
 
   // レート制限チェック
   if (!check_rate_limit($user_ip)) {
+    log_access('upload', 429, 0, '', 'アップロード制限に達しました。');
     error('アップロード制限に達しました。1分間お待ちください。');
     exit;
   }
@@ -235,7 +248,11 @@ function upload() {
   $dest = '';
   $ok_message = '';
   $ng_message = '';
+  $total_file_size = 0;
+  $successful_files = array();
+  
   if(count($_FILES['upfile']['name']) < 1) {
+    log_access('upload', 400, 0, '', 'ファイルがないです。');
     error('ファイルがないです。');
     exit;
   }
@@ -246,12 +263,14 @@ function upload() {
     
     // セキュリティ: ファイルアップロードの基本チェック
     if (!is_uploaded_file($tmp_file)) {
+      log_access('upload', 400, 0, $origin_file, '不正なファイルです。');
       $ng_message .= $origin_file.'(不正なファイルです。), ';
       continue;
     }
     
     // セキュリティ: ファイルサイズの基本チェック
     if ($_FILES['upfile']['size'][$i] <= 0) {
+      log_access('upload', 400, 0, $origin_file, '空のファイルです。');
       $ng_message .= $origin_file.'(空のファイルです。), ';
       continue;
     }
@@ -294,6 +313,7 @@ function upload() {
     move_uploaded_file($tmp_file, $dest);
     chmod($dest, PERMISSION_FOR_DEST);
     if(!is_file($dest)) {
+      log_access('upload', 500, 0, $origin_file, '正常にコピーできませんでした。');
       $ng_message .= $origin_file.'(正常にコピーできませんでした。), ';
       continue;
     }
@@ -324,16 +344,21 @@ function upload() {
             return $stmt->execute();
           });
           $ok_num++;
+          $total_file_size += $final_size;
+          $successful_files[] = $upfile;
         } catch (PDOException $e) {
           // セキュリティ: エラーメッセージを一般化
           error_log("DB接続エラー: " . $e->getMessage());
+          log_access('upload', 500, $final_size, $upfile, 'データベースエラーが発生しました。');
           echo "データベースエラーが発生しました。";
         }
       } else {
+        log_access('upload', 400, $final_size, $origin_file, '規定外の拡張子なので削除');
         $ng_message .= $origin_file.'(規定外の拡張子なので削除), ';
         unlink($dest);
       }
     } else {
+      log_access('upload', 413, $_FILES['upfile']['size'][$i], $origin_file, '設定されたファイルサイズをオーバー');
       $ng_message .= $origin_file.'(設定されたファイルサイズをオーバー), ';
     }
   }
@@ -354,12 +379,108 @@ function upload() {
     error_log("DB接続エラー: " . $e->getMessage());
     echo "データベースエラーが発生しました。";
   }
+  
+  // アップロード完了時のログ記録
+  if ($ok_num > 0) {
+    log_access('upload', 200, $total_file_size, implode(', ', $successful_files), '');
+  }
+  
   result($ok_num,$ng_message);
 }
 
 //削除
 function del() {
 
+}
+
+// ログ表示モード
+function show_logs() {
+  global $blade, $dat;
+  
+  // フィルターパラメータを取得
+  $filter_action = filter_input(INPUT_GET, 'action', FILTER_SANITIZE_STRING) ?: '';
+  $filter_status = filter_input(INPUT_GET, 'status', FILTER_SANITIZE_STRING) ?: '';
+  $filter_ip = filter_input(INPUT_GET, 'ip', FILTER_SANITIZE_STRING) ?: '';
+  $current_page = max(1, (int)filter_input(INPUT_GET, 'page', FILTER_SANITIZE_NUMBER_INT) ?: 1);
+  $per_page = 50;
+  $offset = ($current_page - 1) * $per_page;
+  
+  try {
+    // フィルター条件を構築
+    $where_conditions = array();
+    $params = array();
+    
+    if ($filter_action) {
+      $where_conditions[] = "action = :action";
+      $params[':action'] = $filter_action;
+    }
+    
+    if ($filter_status) {
+      $where_conditions[] = "status_code = :status";
+      $params[':status'] = (int)$filter_status;
+    }
+    
+    if ($filter_ip) {
+      $where_conditions[] = "user_ip LIKE :ip";
+      $params[':ip'] = '%' . $filter_ip . '%';
+    }
+    
+    $where_clause = '';
+    if (!empty($where_conditions)) {
+      $where_clause = 'WHERE ' . implode(' AND ', $where_conditions);
+    }
+    
+    // 総件数を取得
+    $total_count = execute_db_operation(function($db) use ($where_clause, $params) {
+      $sql = "SELECT COUNT(*) as count FROM accesslog " . $where_clause;
+      $stmt = $db->prepare($sql);
+      foreach ($params as $key => $value) {
+        $stmt->bindValue($key, $value);
+      }
+      $stmt->execute();
+      $result = $stmt->fetch();
+      return $result['count'];
+    });
+    
+    // ログデータを取得
+    $logs = execute_db_operation(function($db) use ($where_clause, $params, $per_page, $offset) {
+      $sql = "SELECT * FROM accesslog " . $where_clause . " ORDER BY created DESC LIMIT :limit OFFSET :offset";
+      $stmt = $db->prepare($sql);
+      foreach ($params as $key => $value) {
+        $stmt->bindValue($key, $value);
+      }
+      $stmt->bindParam(':limit', $per_page, PDO::PARAM_INT);
+      $stmt->bindParam(':offset', $offset, PDO::PARAM_INT);
+      $stmt->execute();
+      
+      $logs = array();
+      while ($row = $stmt->fetch()) {
+        $logs[] = $row;
+      }
+      return $logs;
+    });
+    
+    // 統計情報を取得
+    $stats = get_access_stats();
+    
+    // ページネーション情報
+    $total_pages = ceil($total_count / $per_page);
+    
+    // テンプレートにデータを渡す
+    $dat['logs'] = $logs;
+    $dat['stats'] = $stats;
+    $dat['current_page'] = $current_page;
+    $dat['total_pages'] = $total_pages;
+    $dat['filter_action'] = $filter_action;
+    $dat['filter_status'] = $filter_status;
+    $dat['filter_ip'] = $filter_ip;
+    
+    echo $blade->run('logs', $dat);
+    
+  } catch (Exception $e) {
+    error_log("ログ表示エラー: " . $e->getMessage());
+    error('ログの表示中にエラーが発生しました。');
+  }
 }
 
 //通常表示モード
@@ -376,6 +497,9 @@ function def() {
 
   // ユーザーIPを取得
   $user_ip = get_uip();
+  
+  // アクセスログ記録
+  log_access('view', 200);
 
   //ファイル数カウント
   try {
@@ -566,6 +690,103 @@ function validate_file_type($file_path, $extension) {
   return false;
 }
 
+// アクセスログ記録関数
+function log_access($action, $status_code = 200, $file_size = 0, $file_name = '', $error_message = '') {
+  try {
+    $user_ip = get_uip();
+    $user_agent = isset($_SERVER['HTTP_USER_AGENT']) ? $_SERVER['HTTP_USER_AGENT'] : '';
+    $referer = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : '';
+    $request_uri = isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : '';
+    $method = isset($_SERVER['REQUEST_METHOD']) ? $_SERVER['REQUEST_METHOD'] : '';
+    
+    execute_db_operation(function($db) use ($action, $user_ip, $user_agent, $referer, $request_uri, $method, $status_code, $file_size, $file_name, $error_message) {
+      $stmt = $db->prepare("INSERT INTO accesslog (created, action, user_ip, user_agent, referer, request_uri, method, status_code, file_size, file_name, error_message) VALUES (datetime('now', 'localtime'), :action, :user_ip, :user_agent, :referer, :request_uri, :method, :status_code, :file_size, :file_name, :error_message)");
+      $stmt->bindParam(':action', $action, PDO::PARAM_STR);
+      $stmt->bindParam(':user_ip', $user_ip, PDO::PARAM_STR);
+      $stmt->bindParam(':user_agent', $user_agent, PDO::PARAM_STR);
+      $stmt->bindParam(':referer', $referer, PDO::PARAM_STR);
+      $stmt->bindParam(':request_uri', $request_uri, PDO::PARAM_STR);
+      $stmt->bindParam(':method', $method, PDO::PARAM_STR);
+      $stmt->bindParam(':status_code', $status_code, PDO::PARAM_INT);
+      $stmt->bindParam(':file_size', $file_size, PDO::PARAM_INT);
+      $stmt->bindParam(':file_name', $file_name, PDO::PARAM_STR);
+      $stmt->bindParam(':error_message', $error_message, PDO::PARAM_STR);
+      return $stmt->execute();
+    });
+  } catch (Exception $e) {
+    // ログ記録に失敗しても処理を継続
+    error_log("アクセスログ記録エラー: " . $e->getMessage());
+  }
+}
+
+// アクセスログ取得関数
+function get_access_logs($limit = 100, $offset = 0) {
+  try {
+    return execute_db_operation(function($db) use ($limit, $offset) {
+      $stmt = $db->prepare("SELECT * FROM accesslog ORDER BY created DESC LIMIT :limit OFFSET :offset");
+      $stmt->bindParam(':limit', $limit, PDO::PARAM_INT);
+      $stmt->bindParam(':offset', $offset, PDO::PARAM_INT);
+      $stmt->execute();
+      
+      $logs = array();
+      while ($row = $stmt->fetch()) {
+        $logs[] = $row;
+      }
+      return $logs;
+    });
+  } catch (Exception $e) {
+    error_log("アクセスログ取得エラー: " . $e->getMessage());
+    return array();
+  }
+}
+
+// アクセスログ統計取得関数
+function get_access_stats() {
+  try {
+    return execute_db_operation(function($db) {
+      $stats = array();
+      
+      // 総アクセス数
+      $stmt = $db->prepare("SELECT COUNT(*) as total FROM accesslog");
+      $stmt->execute();
+      $result = $stmt->fetch();
+      $stats['total_access'] = $result['total'];
+      
+      // 今日のアクセス数
+      $stmt = $db->prepare("SELECT COUNT(*) as today FROM accesslog WHERE date(created) = date('now', 'localtime')");
+      $stmt->execute();
+      $result = $stmt->fetch();
+      $stats['today_access'] = $result['today'];
+      
+      // アップロード成功数
+      $stmt = $db->prepare("SELECT COUNT(*) as uploads FROM accesslog WHERE action = 'upload' AND status_code = 200");
+      $stmt->execute();
+      $result = $stmt->fetch();
+      $stats['successful_uploads'] = $result['uploads'];
+      
+      // エラー数
+      $stmt = $db->prepare("SELECT COUNT(*) as errors FROM accesslog WHERE status_code >= 400");
+      $stmt->execute();
+      $result = $stmt->fetch();
+      $stats['errors'] = $result['errors'];
+      
+      // アクション別統計
+      $stmt = $db->prepare("SELECT action, COUNT(*) as count FROM accesslog GROUP BY action");
+      $stmt->execute();
+      $action_stats = array();
+      while ($row = $stmt->fetch()) {
+        $action_stats[$row['action']] = $row['count'];
+      }
+      $stats['action_stats'] = $action_stats;
+      
+      return $stats;
+    });
+  } catch (Exception $e) {
+    error_log("アクセス統計取得エラー: " . $e->getMessage());
+    return array();
+  }
+}
+
 // レート制限機能
 function check_rate_limit($user_ip) {
   if (!defined('ENABLE_RATE_LIMIT') || ENABLE_RATE_LIMIT != '1') {
@@ -703,6 +924,10 @@ function error($mes) {
   global $db;
   global $blade,$dat;
   $db = null; //db切断
+  
+  // エラーログ記録
+  log_access('error', 500, 0, '', $mes);
+  
   $dat['errmes'] = htmlspecialchars($mes, ENT_QUOTES, 'UTF-8');
   $dat['othermode'] = 'err';
   echo $blade->run(OTHER_FILE,$dat);
