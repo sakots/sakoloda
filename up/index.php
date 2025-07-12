@@ -398,9 +398,9 @@ function show_logs() {
   global $blade, $dat;
   
   // フィルターパラメータを取得
-  $filter_action = filter_input(INPUT_GET, 'action', FILTER_SANITIZE_STRING) ?: '';
-  $filter_status = filter_input(INPUT_GET, 'status', FILTER_SANITIZE_STRING) ?: '';
-  $filter_ip = filter_input(INPUT_GET, 'ip', FILTER_SANITIZE_STRING) ?: '';
+  $filter_action = htmlspecialchars(filter_input(INPUT_GET, 'action') ?: '', ENT_QUOTES, 'UTF-8');
+  $filter_status = htmlspecialchars(filter_input(INPUT_GET, 'status') ?: '', ENT_QUOTES, 'UTF-8');
+  $filter_ip = htmlspecialchars(filter_input(INPUT_GET, 'ip') ?: '', ENT_QUOTES, 'UTF-8');
   $current_page = max(1, (int)filter_input(INPUT_GET, 'page', FILTER_SANITIZE_NUMBER_INT) ?: 1);
   $per_page = 50;
   $offset = ($current_page - 1) * $per_page;
