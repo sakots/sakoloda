@@ -327,14 +327,26 @@ function upload() {
         unlink($dest);
         $upfile = $webp_result;
         $dest = UP_DIR.'/'.$upfile;
+        // WebP圧縮後は拡張子も更新
+        $extension = 'webp';
       }
     }
     
     // 圧縮後のファイルサイズでチェック
     $final_size = filesize($dest);
     if($final_size < UP_MAX_SIZE) {
+      // デバッグ情報を追加
+      error_log("ファイル検証: 拡張子={$extension}, ファイルサイズ={$final_size}, 最大サイズ=" . UP_MAX_SIZE);
+      error_log("ACCEPT_FILE_EXT: " . ACCEPT_FILE_EXT);
+      
       // セキュリティ: より厳密な拡張子チェック
-      if(preg_match('/\A('.ACCEPT_FILE_EXT.')\z/i', $extension) && validate_file_type($dest, $extension)) {
+      $extension_match = preg_match('/\A('.ACCEPT_FILE_EXT.')\z/i', $extension);
+      $type_validation = validate_file_type($dest, $extension);
+      
+      error_log("拡張子マッチ: " . ($extension_match ? 'true' : 'false'));
+      error_log("タイプ検証: " . ($type_validation ? 'true' : 'false'));
+      
+      if($extension_match && $type_validation) {
         try {
           execute_db_operation(function($db) use ($user_ip, $upfile, $invz) {
             $stmt = $db->prepare("INSERT INTO uplog (created, host, upfile, invz) VALUES (datetime('now', 'localtime'), :host, :upfile, :invz)");
@@ -673,6 +685,9 @@ function validate_file_type($file_path, $extension) {
   $actual_mime = finfo_file($finfo, $file_path);
   finfo_close($finfo);
   
+  // デバッグ情報
+  error_log("validate_file_type: ファイル={$file_path}, 拡張子={$extension}, 実際のMIME={$actual_mime}");
+  
   // 許可されたMIMEタイプのリスト
   $allowed_mimes = [
     'jpg' => ['image/jpeg'],
@@ -684,9 +699,12 @@ function validate_file_type($file_path, $extension) {
   
   // 拡張子に対応するMIMEタイプをチェック
   if (isset($allowed_mimes[$extension])) {
-    return in_array($actual_mime, $allowed_mimes[$extension]);
+    $result = in_array($actual_mime, $allowed_mimes[$extension]);
+    error_log("validate_file_type: 期待されるMIME=" . implode(', ', $allowed_mimes[$extension]) . ", 結果=" . ($result ? 'true' : 'false'));
+    return $result;
   }
   
+  error_log("validate_file_type: 拡張子 {$extension} は許可されていません");
   return false;
 }
 

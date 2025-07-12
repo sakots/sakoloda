@@ -44,10 +44,9 @@
           📋 クリップボードから画像をアップロード
         </button>
         <div id="clipboard-preview" class="clipboard-preview" style="display: none;">
-          <img id="clipboard-image" alt="クリップボード画像プレビュー">
-          <div class="clipboard-actions">
-            <button type="button" id="clipboard-upload-btn" class="clipboard-upload-btn">アップロード</button>
-            <button type="button" id="clipboard-cancel-btn" class="clipboard-cancel-btn">キャンセル</button>
+          <div class="clipboard-image-container">
+            <img id="clipboard-image" alt="クリップボード画像プレビュー">
+            <button type="button" id="clipboard-cancel-btn" class="clipboard-cancel-btn">×</button>
           </div>
         </div>
       </div>

@@ -69,7 +69,6 @@ document.addEventListener('DOMContentLoaded', function() {
   const clipboardBtn = document.getElementById('clipboard-btn');
   const clipboardPreview = document.getElementById('clipboard-preview');
   const clipboardImage = document.getElementById('clipboard-image');
-  const clipboardUploadBtn = document.getElementById('clipboard-upload-btn');
   const clipboardCancelBtn = document.getElementById('clipboard-cancel-btn');
   
   console.log('クリップボード要素の確認:', {
@@ -140,12 +139,6 @@ document.addEventListener('DOMContentLoaded', function() {
             dataTransfer.items.add(file);
             inputFiles.files = dataTransfer.files;
             
-            // アップロードボタンのイベントリスナーを設定
-            clipboardUploadBtn.addEventListener('click', () => {
-              console.log('クリップボードアップロードボタンがクリックされました');
-              uploadClipboardImage(blob);
-            }, { once: true });
-            
             // クリップボード画像が読み込まれたらアップロードボタンを有効化
             submitBtn.disabled = false;
             submitBtn.style.opacity = '1';
@@ -160,6 +153,9 @@ document.addEventListener('DOMContentLoaded', function() {
               submitBtn.disabled = true;
               submitBtn.style.opacity = '0.6';
               submitBtn.style.cursor = 'not-allowed';
+              // ファイル入力もクリア
+              inputFiles.value = '';
+              updateSubmitButton();
             };
             return;
           }
@@ -179,6 +175,9 @@ document.addEventListener('DOMContentLoaded', function() {
     if (clipboardImage.src) {
       URL.revokeObjectURL(clipboardImage.src);
     }
+    // ファイル入力もクリア
+    inputFiles.value = '';
+    updateSubmitButton();
   };
 
   // ファイル選択時の処理
@@ -295,18 +294,5 @@ document.addEventListener('DOMContentLoaded', function() {
   // 初期状態でボタンを無効化
   updateSubmitButton();
 
-  // クリップボード画像をアップロード
-  async function uploadClipboardImage(blob) {
-    console.log('クリップボードアップロード開始');
-    
-    // 通常のフォーム送信をトリガー
-    const form = document.querySelector('form');
-    if (form) {
-      console.log('フォーム送信をトリガー');
-      form.submit();
-    } else {
-      console.error('フォームが見つかりません');
-      alert('フォームが見つかりません。');
-    }
-  }
+
 });

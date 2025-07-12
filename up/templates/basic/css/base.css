@@ -388,48 +388,42 @@ footer .copy p a.github svg {
   border-radius: 6px;
   background-color: #f9f9f9;
 }
-.clipboard-upload .clipboard-preview #clipboard-image {
+.clipboard-upload .clipboard-preview .clipboard-image-container {
+  position: relative;
+  display: inline-block;
+  margin-bottom: 10px;
+}
+.clipboard-upload .clipboard-preview .clipboard-image-container #clipboard-image {
   max-width: 100%;
   max-height: 200px;
   border-radius: 4px;
-  margin-bottom: 10px;
+  display: block;
 }
-.clipboard-upload .clipboard-preview .clipboard-actions {
-  display: flex;
-  gap: 10px;
-  justify-content: center;
-  margin-top: 10px;
-}
-.clipboard-upload .clipboard-preview .clipboard-upload-btn {
-  background-color: #2196F3;
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 12px;
-  transition: background-color 0.3s ease;
-}
-.clipboard-upload .clipboard-preview .clipboard-upload-btn:hover {
-  background-color: #1976D2;
-}
-.clipboard-upload .clipboard-preview .clipboard-upload-btn:active {
-  background-color: #1565C0;
-}
-.clipboard-upload .clipboard-preview .clipboard-cancel-btn {
+.clipboard-upload .clipboard-preview .clipboard-image-container .clipboard-cancel-btn {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 24px;
+  height: 24px;
   background-color: #f44336;
   color: white;
   border: none;
-  padding: 8px 16px;
-  border-radius: 4px;
+  border-radius: 50%;
   cursor: pointer;
   font-size: 12px;
-  transition: background-color 0.3s ease;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  z-index: 10;
 }
-.clipboard-upload .clipboard-preview .clipboard-cancel-btn:hover {
+.clipboard-upload .clipboard-preview .clipboard-image-container .clipboard-cancel-btn:hover {
   background-color: #d32f2f;
+  transform: scale(1.1);
 }
-.clipboard-upload .clipboard-preview .clipboard-cancel-btn:active {
+.clipboard-upload .clipboard-preview .clipboard-image-container .clipboard-cancel-btn:active {
   background-color: #b71c1c;
+  transform: scale(0.95);
 }
 /*# sourceMappingURL=base.css.map */

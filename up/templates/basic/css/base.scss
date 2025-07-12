@@ -416,55 +416,46 @@ footer {
     border-radius: 6px;
     background-color: #f9f9f9;
     
-    #clipboard-image {
-      max-width: 100%;
-      max-height: 200px;
-      border-radius: 4px;
+    .clipboard-image-container {
+      position: relative;
+      display: inline-block;
       margin-bottom: 10px;
-    }
-    
-    .clipboard-actions {
-    display: flex;
-    gap: 10px;
-    justify-content: center;
-    margin-top: 10px;
-    }
+      
+      #clipboard-image {
+        max-width: 100%;
+        max-height: 200px;
+        border-radius: 4px;
+        display: block;
+      }
+      
+      .clipboard-cancel-btn {
+        position: absolute;
+        top: -8px;
+        right: -8px;
+        width: 24px;
+        height: 24px;
+        background-color: #f44336;
+        color: white;
+        border: none;
+        border-radius: 50%;
+        cursor: pointer;
+        font-size: 12px;
+        font-weight: bold;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s ease;
+        z-index: 10;
         
-    .clipboard-upload-btn {
-      background-color: #2196F3;
-      color: white;
-      border: none;
-      padding: 8px 16px;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 12px;
-      transition: background-color 0.3s ease;
-      
-      &:hover {
-        background-color: #1976D2;
-      }
-      
-      &:active {
-        background-color: #1565C0;
-      }
-    }
-  
-    .clipboard-cancel-btn {
-      background-color: #f44336;
-      color: white;
-      border: none;
-      padding: 8px 16px;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 12px;
-      transition: background-color 0.3s ease;
-      
-      &:hover {
-        background-color: #d32f2f;
-      }
-      
-      &:active {
-        background-color: #b71c1c;
+        &:hover {
+          background-color: #d32f2f;
+          transform: scale(1.1);
+        }
+        
+        &:active {
+          background-color: #b71c1c;
+          transform: scale(0.95);
+        }
       }
     }
   }
