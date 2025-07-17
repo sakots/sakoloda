@@ -22,6 +22,7 @@
     <h2>ろだ</h2>
     <p>最大アップロードサイズ: {{$up_max_mb}}MB</p>
     <p>このサイズを超えるとwebpに圧縮します: {{$up_threshold_mb_webp}}MB</p>
+    <p>複数ファイルのドラッグアンドドロップに対応しています</p>
     @if ($rate_limit_enabled)
     <div class="rate-limit-info">
       <p>アップロード制限: {{$rate_limit_info['remaining']}}/{{$rate_limit_info['limit']}} 残り</p>
@@ -35,7 +36,7 @@
         <div class="dropbox">
           <svg viewBox="0 0 640 512"><use href="templates/{{$theme_dir}}/icons/cloud-upload-alt.svg#cloud-upload"></svg>
         </div>
-        <p>Drag and drop a file or click</p>
+        <p>Drag and drop file(s) or click</p>
         <input type="file" name="upfile[]" id="input-files" accept="{{$type}}" multiple>
         <div id="file-previews" class="file-previews"></div>
       </div>
