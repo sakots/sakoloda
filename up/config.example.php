@@ -41,17 +41,17 @@ define('TEMP_DIR', 'tmp');
 //アップロードできるファイルの最大サイズ(MB)
 define('UP_MAX_MB', '4');
 
-//WebP圧縮の閾値(MB) - このサイズを超えるとWebPに圧縮
-define('UP_THRESHOLD_MB_WEBP', '2');
+//AVIF圧縮の閾値(MB) - このサイズを超えるとAVIFに圧縮
+define('UP_THRESHOLD_MB_AVIF', '1');
 
-//WebP圧縮の品質(0-100)
-define('WEBP_QUALITY', '80');
+//AVIF圧縮の品質(0-100)
+define('AVIF_QUALITY', '60');
 
 //アップロード可能なファイルのmimetype。', 'で区切ってください。
-define('ACCEPT_FILETYPE', 'image/jpeg, image/png, image/gif, image/webp');
+define('ACCEPT_FILETYPE', 'image/jpeg, image/png, image/gif, image/webp, image/avif');
 
 //アップロード可能なファイルの拡張子。'|'（パイプ）で区切ってください。
-define('ACCEPT_FILE_EXT', 'jpg|jpeg|png|gif|webp');
+define('ACCEPT_FILE_EXT', 'jpg|jpeg|png|gif|webp|avif');
 
 // タイムゾーン
 define('DEFAULT_TIMEZONE','Asia/Tokyo');
@@ -88,4 +88,4 @@ define('PHP_SELF', 'index.php');
 
 /* ------------- コンフィグ互換性管理 ------------- */
 
-define('CONF_VER', 1);
+define('CONF_VER', 250812);
