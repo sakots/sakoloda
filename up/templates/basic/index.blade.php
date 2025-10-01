@@ -12,9 +12,6 @@
 <header>
   <div>
     <h1>{{$title}}</h1>
-    <nav class="admin-nav">
-      <a href="index.php?mode=logs" class="logs-link">📊 アクセスログ</a>
-    </nav>
   </div>
 </header>
 <main>
