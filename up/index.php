@@ -904,6 +904,9 @@ function get_thumbnail_filename($original_filename) {
   return is_file($thumb_path) ? $thumb_filename : '';
 }
 
+/**
+ * @param resource|object|null $image
+ */
 function create_avif_thumbnail($source_path, $extension) {
   if (!is_supported_image_extension($extension)) {
     return false;
@@ -958,7 +961,6 @@ function create_avif_thumbnail($source_path, $extension) {
   $width = imagesx($image);
   $height = imagesy($image);
   if ($width === 0 || $height === 0) {
-    imagedestroy($image);
     return false;
   }
 
@@ -969,7 +971,6 @@ function create_avif_thumbnail($source_path, $extension) {
   if ($scale < 1) {
     $thumbnail = imagescale($image, $new_width, $new_height);
     if (!$thumbnail) {
-      imagedestroy($image);
       return false;
     }
   } else {
@@ -991,9 +992,7 @@ function create_avif_thumbnail($source_path, $extension) {
   $result = imageavif($thumbnail, $thumb_path, $quality);
 
   if ($thumbnail !== $image) {
-    imagedestroy($thumbnail);
   }
-  imagedestroy($image);
 
   if ($result) {
     chmod($thumb_path, PERMISSION_FOR_DEST);
@@ -1051,7 +1050,6 @@ function convert_to_avif($source_path, $original_extension) {
   
   // imageavif関数を使用してAVIFに変換
   $result = imageavif($image, $avif_path, $avif_quality);
-  imagedestroy($image);
   
   if ($result) {
     chmod($avif_path, PERMISSION_FOR_DEST);
