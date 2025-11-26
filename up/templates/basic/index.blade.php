@@ -67,9 +67,20 @@
     <div>
       <div class="files">
         <div class="contain">
-          <ul>
+          <ul class="file-grid">
             @foreach ($file_list as $files)
-            <li><a href="{{$path}}/{{$files['upfile']}}" target="_top" rel="noopener noreferrer">{{$files['upfile']}}</a></li>
+            <li class="file-card">
+              <a href="{{$path}}/{{$files['upfile']}}" target="_top" rel="noopener noreferrer" class="thumb-link">
+                @if ($files['thumb_url'])
+                <img src="{{$files['thumb_url']}}" alt="{{$files['upfile']}}のサムネイル" loading="lazy" decoding="async">
+                @else
+                <div class="thumb-fallback">
+                  {{$files['upfile']}}
+                </div>
+                @endif
+              </a>
+              <p class="file-name"><a href="{{$path}}/{{$files['upfile']}}" target="_top" rel="noopener noreferrer">{{$files['upfile']}}</a></p>
+            </li>
             @endforeach
           </ul>
         </div>

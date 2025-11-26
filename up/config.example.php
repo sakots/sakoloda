@@ -47,6 +47,16 @@ define('UP_THRESHOLD_MB_AVIF', '1');
 //AVIF圧縮の品質(0-100)
 define('AVIF_QUALITY', '60');
 
+//サムネイル保存ディレクトリ名
+define('THUMB_DIR', 'thumbs');
+
+//サムネイルの最大縦横サイズ(px)
+define('THUMB_MAX_WIDTH', 320);
+define('THUMB_MAX_HEIGHT', 320);
+
+//サムネイルAVIFの品質(0-100)
+define('THUMB_QUALITY', 60);
+
 //アップロード可能なファイルのmimetype。', 'で区切ってください。
 define('ACCEPT_FILETYPE', 'image/jpeg, image/png, image/gif, image/webp, image/avif');
 
@@ -88,4 +98,4 @@ define('PHP_SELF', 'index.php');
 
 /* ------------- コンフィグ互換性管理 ------------- */
 
-define('CONF_VER', 250812);
+define('CONF_VER', 251126);

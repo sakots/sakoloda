@@ -5,7 +5,7 @@
 //--------------------------------------------------
 
 //スクリプトのバージョン
-define('UP_VER','v0.0.3'); //lot.251001.0
+define('UP_VER','v0.0.4'); //lot.251126.0
 
 //設定の読み込み
 require_once (__DIR__.'/config.php');
@@ -19,7 +19,7 @@ if (($php_ver = phpversion()) < "8.1.0") {
   die("PHP version 8.1.0 or higher is required for this program to work. <br>\n(Current PHP version:{$php_ver})");
 }
 //コンフィグのバージョンが古くて互換性がない場合動作させない
-if (CONF_VER < 250812 || !defined('CONF_VER')) {
+if (CONF_VER < 251126 || !defined('CONF_VER')) {
   die("コンフィグファイルに互換性がないようです。再設定をお願いします。<br>\n The configuration file is incompatible. Please reconfigure it.");
 }
 //管理パスが初期値(admin_pass)の場合は動作させない
@@ -27,7 +27,7 @@ if ($admin_pass === 'admin_pass') {
   die("管理パスが初期設定値のままです！危険なので動かせません。<br>\n The admin pass is still at its default value! This program can't run it until you fix it.");
 }
 
-//BladeOne v4.18
+//BladeOne v4.19.1
 include (__DIR__.'/BladeOne/lib/BladeOne.php');
 use eftec\bladeone\BladeOne;
 
@@ -46,6 +46,7 @@ $dat['path'] = UP_DIR;
 $dat['ver'] = UP_VER;
 $dat['title'] = UP_TITLE;
 $dat['theme_dir'] = THEME_DIR;
+$dat['thumb_dir'] = THUMB_DIR;
 
 define('UP_MAX_SIZE', UP_MAX_MB*1024*1024);
 $dat['up_max_size'] = UP_MAX_SIZE;
@@ -57,8 +58,8 @@ $dat['up_max_mb'] = UP_MAX_MB;
 $dat['t_name'] = THEME_NAME;
 $dat['t_ver'] = THEME_VER;
 
-  $dat['up_threshold_mb_avif'] = UP_THRESHOLD_MB_AVIF;
-  $dat['avif_quality'] = AVIF_QUALITY;
+$dat['up_threshold_mb_avif'] = UP_THRESHOLD_MB_AVIF;
+$dat['avif_quality'] = AVIF_QUALITY;
 
 //データベース接続PDO
 define('DB_PDO', 'sqlite:'.DB_NAME.'.db');
@@ -139,6 +140,13 @@ function init() {
   if(!is_dir(TEMP_DIR)) $err.= TEMP_DIR."がありません<br>";
   if(!is_writable(TEMP_DIR)) $err.= TEMP_DIR."を書けません<br>";
   if(!is_readable(TEMP_DIR)) $err.= TEMP_DIR."を読めません<br>";
+  if (!is_dir(THUMB_DIR)) {
+    mkdir(THUMB_DIR, PERMISSION_FOR_DIR);
+    chmod(THUMB_DIR, PERMISSION_FOR_DIR);
+  }
+  if(!is_dir(THUMB_DIR)) $err.= THUMB_DIR."がありません<br>";
+  if(!is_writable(THUMB_DIR)) $err.= THUMB_DIR."を書けません<br>";
+  if(!is_readable(THUMB_DIR)) $err.= THUMB_DIR."を読めません<br>";
   if($err) error($err);
 }
 
@@ -347,6 +355,12 @@ function upload() {
       error_log("タイプ検証: " . ($type_validation ? 'true' : 'false'));
       
       if($extension_match && $type_validation) {
+        if (is_supported_image_extension($extension)) {
+          $thumb_created = create_avif_thumbnail($dest, $extension);
+          if (!$thumb_created) {
+            error_log("サムネイル作成に失敗: {$dest}");
+          }
+        }
         try {
           execute_db_operation(function($db) use ($user_ip, $upfile, $invz) {
             $stmt = $db->prepare("INSERT INTO uplog (created, host, upfile, invz) VALUES (datetime('now', 'localtime'), :host, :upfile, :invz)");
@@ -541,6 +555,13 @@ function def() {
       return $files;
     });
 
+    foreach ($file_list as &$file) {
+      $current_extension = strtolower(pathinfo($file['upfile'], PATHINFO_EXTENSION));
+      $file['is_image'] = is_supported_image_extension($current_extension);
+      $thumb_filename = $file['is_image'] ? get_thumbnail_filename($file['upfile']) : '';
+      $file['thumb_url'] = $thumb_filename ? THUMB_DIR.'/'.$thumb_filename : '';
+    }
+    unset($file);
     $dat['file_list'] = $file_list;
     
     // 合計サイズを計算
@@ -869,6 +890,117 @@ function get_rate_limit_info($user_ip) {
     error_log("レート制限情報取得エラー: " . $e->getMessage());
     return ['remaining' => 999, 'reset_time' => 0];
   }
+}
+
+function is_supported_image_extension($extension) {
+  $extension = strtolower($extension);
+  $supported = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'avif'];
+  return in_array($extension, $supported, true);
+}
+
+function get_thumbnail_filename($original_filename) {
+  $thumb_filename = pathinfo($original_filename, PATHINFO_FILENAME).'.avif';
+  $thumb_path = THUMB_DIR.'/'.$thumb_filename;
+  return is_file($thumb_path) ? $thumb_filename : '';
+}
+
+function create_avif_thumbnail($source_path, $extension) {
+  if (!is_supported_image_extension($extension)) {
+    return false;
+  }
+
+  if (!extension_loaded('gd') || !function_exists('imageavif')) {
+    error_log('サムネイル作成にはGD拡張とimageavif関数が必要です');
+    return false;
+  }
+
+  $extension = strtolower($extension);
+  $image = null;
+  switch ($extension) {
+    case 'jpg':
+    case 'jpeg':
+      $image = imagecreatefromjpeg($source_path);
+      break;
+    case 'png':
+      $image = imagecreatefrompng($source_path);
+      if ($image) {
+        imagepalettetotruecolor($image);
+        imagealphablending($image, true);
+        imagesavealpha($image, true);
+      }
+      break;
+    case 'gif':
+      $image = imagecreatefromgif($source_path);
+      if ($image) {
+        imagepalettetotruecolor($image);
+        imagealphablending($image, true);
+        imagesavealpha($image, true);
+      }
+      break;
+    case 'webp':
+      if (function_exists('imagecreatefromwebp')) {
+        $image = imagecreatefromwebp($source_path);
+      }
+      break;
+    case 'avif':
+      if (function_exists('imagecreatefromavif')) {
+        $image = imagecreatefromavif($source_path);
+      }
+      break;
+    default:
+      return false;
+  }
+
+  if (!$image) {
+    return false;
+  }
+
+  $width = imagesx($image);
+  $height = imagesy($image);
+  if ($width === 0 || $height === 0) {
+    imagedestroy($image);
+    return false;
+  }
+
+  $scale = min(THUMB_MAX_WIDTH / $width, THUMB_MAX_HEIGHT / $height, 1);
+  $new_width = max(1, (int)($width * $scale));
+  $new_height = max(1, (int)($height * $scale));
+
+  if ($scale < 1) {
+    $thumbnail = imagescale($image, $new_width, $new_height);
+    if (!$thumbnail) {
+      imagedestroy($image);
+      return false;
+    }
+  } else {
+    $thumbnail = $image;
+  }
+
+  imagealphablending($thumbnail, true);
+  imagesavealpha($thumbnail, true);
+
+  if (!is_dir(THUMB_DIR)) {
+    mkdir(THUMB_DIR, PERMISSION_FOR_DIR);
+    chmod(THUMB_DIR, PERMISSION_FOR_DIR);
+  }
+
+  $thumb_filename = pathinfo($source_path, PATHINFO_FILENAME).'.avif';
+  $thumb_path = THUMB_DIR.'/'.$thumb_filename;
+  $quality = defined('THUMB_QUALITY') ? THUMB_QUALITY : AVIF_QUALITY;
+
+  $result = imageavif($thumbnail, $thumb_path, $quality);
+
+  if ($thumbnail !== $image) {
+    imagedestroy($thumbnail);
+  }
+  imagedestroy($image);
+
+  if ($result) {
+    chmod($thumb_path, PERMISSION_FOR_DEST);
+    return $thumb_filename;
+  }
+
+  return false;
 }
 
 //AVIF変換関数
