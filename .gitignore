@@ -6,3 +6,4 @@ config.php
 tmp/
 cache/
 img/
+thumbs/
