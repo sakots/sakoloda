@@ -30,7 +30,7 @@ define('THEME_DIR', 'basic');
 
 //最大ファイル保持数
 //古いファイルから順番に消えます
-define('LOG_MAX', '75');
+define('LOG_MAX', '400');
 
 //アップロードファイル保存ディレクトリ名
 define('UP_DIR', 'img');
@@ -39,7 +39,7 @@ define('UP_DIR', 'img');
 define('TEMP_DIR', 'tmp');
 
 //アップロードできるファイルの最大サイズ(MB)
-define('UP_MAX_MB', '4');
+define('UP_MAX_MB', '5');
 
 //AVIF圧縮の閾値(MB) - このサイズを超えるとAVIFに圧縮
 define('UP_THRESHOLD_MB_AVIF', '1');
