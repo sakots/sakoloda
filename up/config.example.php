@@ -41,11 +41,11 @@ define('TEMP_DIR', 'tmp');
 //アップロードできるファイルの最大サイズ(MB)
 define('UP_MAX_MB', '5');
 
-//AVIF圧縮の閾値(MB) - このサイズを超えるとAVIFに圧縮
-define('UP_THRESHOLD_MB_AVIF', '1');
+//WebP圧縮の閾値(MB) - このサイズを超えるとWebPに圧縮
+define('UP_THRESHOLD_MB_WEBP', '1');
 
-//AVIF圧縮の品質(0-100)
-define('AVIF_QUALITY', '60');
+//WebP圧縮の品質(0-100)
+define('WEBP_QUALITY', '80');
 
 //サムネイル保存ディレクトリ名
 define('THUMB_DIR', 'thumbs');
@@ -54,8 +54,8 @@ define('THUMB_DIR', 'thumbs');
 define('THUMB_MAX_WIDTH', 320);
 define('THUMB_MAX_HEIGHT', 320);
 
-//サムネイルAVIFの品質(0-100)
-define('THUMB_QUALITY', 60);
+//サムネイルWebPの品質(0-100)
+define('THUMB_QUALITY', 70);
 
 //アップロード可能なファイルのmimetype。', 'で区切ってください。
 define('ACCEPT_FILETYPE', 'image/jpeg, image/png, image/gif, image/webp, image/avif');
@@ -98,4 +98,4 @@ define('PHP_SELF', 'index.php');
 
 /* ------------- コンフィグ互換性管理 ------------- */
 
-define('CONF_VER', 251126);
+define('CONF_VER', 251201);

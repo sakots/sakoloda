@@ -18,7 +18,7 @@
   <section id="up">
     <h2>ろだ</h2>
     <p>最大アップロードサイズ: {{$up_max_mb}}MB</p>
-    <p>このサイズを超えるとAVIFに圧縮します: {{$up_threshold_mb_avif}}MB</p>
+    <p>このサイズを超えるとWebPに圧縮します: {{$up_threshold_mb_webp}}MB</p>
     <p>複数ファイルのドラッグアンドドロップに対応しています</p>
     @if ($rate_limit_enabled)
     <div class="rate-limit-info">

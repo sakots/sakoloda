@@ -5,7 +5,7 @@
 //--------------------------------------------------
 
 //スクリプトのバージョン
-define('UP_VER','v0.0.4'); //lot.251126.0
+define('UP_VER','v0.0.5'); //lot.251201.0
 
 //設定の読み込み
 require_once (__DIR__.'/config.php');
@@ -19,7 +19,7 @@ if (($php_ver = phpversion()) < "8.1.0") {
   die("PHP version 8.1.0 or higher is required for this program to work. <br>\n(Current PHP version:{$php_ver})");
 }
 //コンフィグのバージョンが古くて互換性がない場合動作させない
-if (CONF_VER < 251126 || !defined('CONF_VER')) {
+if (CONF_VER < 251201 || !defined('CONF_VER')) {
   die("コンフィグファイルに互換性がないようです。再設定をお願いします。<br>\n The configuration file is incompatible. Please reconfigure it.");
 }
 //管理パスが初期値(admin_pass)の場合は動作させない
@@ -58,8 +58,8 @@ $dat['up_max_mb'] = UP_MAX_MB;
 $dat['t_name'] = THEME_NAME;
 $dat['t_ver'] = THEME_VER;
 
-$dat['up_threshold_mb_avif'] = UP_THRESHOLD_MB_AVIF;
-$dat['avif_quality'] = AVIF_QUALITY;
+$dat['up_threshold_mb_webp'] = UP_THRESHOLD_MB_WEBP;
+$dat['webp_quality'] = WEBP_QUALITY;
 
 //データベース接続PDO
 define('DB_PDO', 'sqlite:'.DB_NAME.'.db');
@@ -326,17 +326,17 @@ function upload() {
       continue;
     }
     
-    // AVIF圧縮処理（ファイルサイズチェックの前）
+    // WebP圧縮処理（ファイルサイズチェックの前）
     $file_size_mb = $_FILES['upfile']['size'][$i] / (1024 * 1024);
-    if ($file_size_mb > UP_THRESHOLD_MB_AVIF && in_array($extension, ['jpg', 'jpeg', 'png', 'gif'])) {
-      $avif_result = convert_to_avif($dest, $extension);
-      if ($avif_result) {
-        // 元ファイルを削除してAVIFファイルに置き換え
+    if ($file_size_mb > UP_THRESHOLD_MB_WEBP && in_array($extension, ['jpg', 'jpeg', 'png', 'gif'])) {
+      $webp_result = convert_to_webp($dest, $extension);
+      if ($webp_result) {
+        // 元ファイルを削除してWebPファイルに置き換え
         unlink($dest);
-        $upfile = $avif_result;
+        $upfile = $webp_result;
         $dest = UP_DIR.'/'.$upfile;
-        // AVIF圧縮後は拡張子も更新
-        $extension = 'avif';
+        // WebP圧縮後は拡張子も更新
+        $extension = 'webp';
       }
     }
     
@@ -356,7 +356,7 @@ function upload() {
       
       if($extension_match && $type_validation) {
         if (is_supported_image_extension($extension)) {
-          $thumb_created = create_avif_thumbnail($dest, $extension);
+          $thumb_created = create_webp_thumbnail($dest, $extension);
           if (!$thumb_created) {
             error_log("サムネイル作成に失敗: {$dest}");
           }
@@ -899,21 +899,18 @@ function is_supported_image_extension($extension) {
 }
 
 function get_thumbnail_filename($original_filename) {
-  $thumb_filename = pathinfo($original_filename, PATHINFO_FILENAME).'.avif';
+  $thumb_filename = pathinfo($original_filename, PATHINFO_FILENAME).'.webp';
   $thumb_path = THUMB_DIR.'/'.$thumb_filename;
   return is_file($thumb_path) ? $thumb_filename : '';
 }
 
-/**
- * @param resource|object|null $image
- */
-function create_avif_thumbnail($source_path, $extension) {
+function create_webp_thumbnail($source_path, $extension) {
   if (!is_supported_image_extension($extension)) {
     return false;
   }
 
-  if (!extension_loaded('gd') || !function_exists('imageavif')) {
-    error_log('サムネイル作成にはGD拡張とimageavif関数が必要です');
+  if (!extension_loaded('gd') || !function_exists('imagewebp')) {
+    error_log('サムネイル作成にはGD拡張とimagewebp関数が必要です');
     return false;
   }
 
@@ -985,11 +982,11 @@ function create_avif_thumbnail($source_path, $extension) {
     chmod(THUMB_DIR, PERMISSION_FOR_DIR);
   }
 
-  $thumb_filename = pathinfo($source_path, PATHINFO_FILENAME).'.avif';
+  $thumb_filename = pathinfo($source_path, PATHINFO_FILENAME).'.webp';
   $thumb_path = THUMB_DIR.'/'.$thumb_filename;
-  $quality = defined('THUMB_QUALITY') ? THUMB_QUALITY : AVIF_QUALITY;
+  $quality = defined('THUMB_QUALITY') ? THUMB_QUALITY : WEBP_QUALITY;
 
-  $result = imageavif($thumbnail, $thumb_path, $quality);
+  $result = imagewebp($thumbnail, $thumb_path, $quality);
 
   if ($thumbnail !== $image) {
   }
@@ -1002,17 +999,16 @@ function create_avif_thumbnail($source_path, $extension) {
   return false;
 }
 
-//AVIF変換関数
-function convert_to_avif($source_path, $original_extension) {
+//WebP変換関数
+function convert_to_webp($source_path, $original_extension) {
   // GDライブラリが利用可能かチェック
   if (!extension_loaded('gd')) {
-    error_log("AVIF変換にはGDライブラリが必要です");
+    error_log("WebP変換にはGDライブラリが必要です");
     return false;
   }
   
-  // PHP 8.1以降でimageavif関数が利用可能かチェック
-  if (!function_exists('imageavif')) {
-    error_log("AVIF変換にはPHP 8.1以降とimageavif関数が必要です");
+  if (!function_exists('imagewebp')) {
+    error_log("WebP変換にはimagewebp関数が必要です");
     return false;
   }
     
@@ -1041,19 +1037,16 @@ function convert_to_avif($source_path, $original_extension) {
     return false;
   }
   
-  // AVIFファイル名を生成
-  $avif_filename = pathinfo($source_path, PATHINFO_FILENAME) . '.avif';
-  $avif_path = UP_DIR.'/'.$avif_filename;
+  $webp_filename = pathinfo($source_path, PATHINFO_FILENAME) . '.webp';
+  $webp_path = UP_DIR.'/'.$webp_filename;
   
-  // AVIF品質設定
-  $avif_quality = defined('AVIF_QUALITY') ? AVIF_QUALITY : 80;
+  $webp_quality = defined('WEBP_QUALITY') ? WEBP_QUALITY : 80;
   
-  // imageavif関数を使用してAVIFに変換
-  $result = imageavif($image, $avif_path, $avif_quality);
+  $result = imagewebp($image, $webp_path, $webp_quality);
   
   if ($result) {
-    chmod($avif_path, PERMISSION_FOR_DEST);
-    return $avif_filename;
+    chmod($webp_path, PERMISSION_FOR_DEST);
+    return $webp_filename;
   }
   
   return false;
