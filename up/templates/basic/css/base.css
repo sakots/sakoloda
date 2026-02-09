@@ -5,7 +5,7 @@ body {
   background-attachment: fixed;
   background: linear-gradient(#BCA, #769459) fixed;
 }
-body > * {
+body > header, body > footer, body > main {
   width: 60%;
   margin-left: 10%;
 }

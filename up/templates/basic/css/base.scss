@@ -10,7 +10,7 @@ body {
   color: #201;
   background-attachment: fixed;
 	background: linear-gradient($bg_color, darken($bg_color,27%)) fixed;
-  > * {
+  > header, > footer, > main {
     width: 60%;
     margin-left: 10%;
   }
