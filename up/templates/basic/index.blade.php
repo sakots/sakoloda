@@ -7,6 +7,8 @@
   <title>{{$title}}</title>
   <link rel="stylesheet" href="templates/{{$theme_dir}}/css/base.min.css">
   <script src="templates/{{$theme_dir}}/js/upload.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/luminous-lightbox@2.4.0/dist/luminous-basic.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/luminous-lightbox@2.4.0/dist/luminous.min.js"></script>
 </head>
 <body>
 <header>
@@ -70,7 +72,7 @@
           <ul class="file-grid">
             @foreach ($file_list as $files)
             <li class="file-card">
-              <a href="{{$path}}/{{$files['upfile']}}" target="_top" rel="noopener noreferrer" class="thumb-link">
+              <a href="{{$path}}/{{$files['upfile']}}" target="_top" rel="noopener noreferrer" class="thumb-link luminous">
                 @if ($files['thumb_url'])
                 <img src="{{$files['thumb_url']}}" alt="{{$files['upfile']}}のサムネイル" loading="lazy" decoding="async">
                 @else
@@ -104,5 +106,8 @@
     </p>
   </div>
 </footer>
+<script>
+  new LuminousGallery(document.querySelectorAll('.luminous'));
+</script>
 </body>
 </html>
